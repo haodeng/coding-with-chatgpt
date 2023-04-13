@@ -290,3 +290,81 @@ public class CsvSorter {
 }
 ```
     This code sorts the lines by billid, groups lines with the same billid together using a List of Lists, and writes only groups with size greater than or equal to 2 to the output file. Groups with size less than 2 are ignored. Note that the List of Lists could also be represented using a Map where the keys are the billids and the values are the groups of lines with the corresponding billid.
+
+---
+
+    me:after grouping lines, check the "direction" field. If "direction" field is "incoming", ignore it
+    Sure, here's the updated Java code that sorts the lines by billid, groups lines with the same billid together, writes only groups with size greater than or equal to 2 to the output file, and ignores groups with the "direction" field set to "incoming":
+
+```java
+import com.opencsv.CSVReader;
+import com.opencsv.CSVWriter;
+
+import java.io.FileReader;
+import java.io.FileWriter;
+import java.io.IOException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.Comparator;
+import java.util.List;
+
+public class CsvSorter {
+    public static void main(String[] args) throws IOException {
+        // Define input and output file paths
+        String inputFilePath = "input.csv";
+        String outputFilePath = "output.csv";
+        
+        // Create CSVReader object to read the input file
+        CSVReader reader = new CSVReader(new FileReader(inputFilePath));
+        
+        // Read all lines from the input file into a List of String arrays, excluding the header
+        List<String[]> lines = reader.readAll();
+        lines.remove(0); // remove the header line
+        
+        // Sort the lines by the "billid" field using a custom Comparator
+        lines.sort(Comparator.comparing(line -> line[0]));
+        
+        // Create a List of Lists to group lines with the same billid together
+        List<List<String[]>> groups = new ArrayList<>();
+        String currentBillId = null;
+        for (String[] line : lines) {
+            if (!line[0].equals(currentBillId)) {
+                // Start a new group when the billid changes
+                groups.add(new ArrayList<>());
+                currentBillId = line[0];
+            }
+            // Add the current line to the current group
+            groups.get(groups.size() - 1).add(line);
+        }
+        
+        // Create CSVWriter object to write the grouped lines to the output file
+        CSVWriter writer = new CSVWriter(new FileWriter(outputFilePath));
+        
+        // Write each group of lines to the output file if its size is greater than or equal to 2 and the direction is not incoming
+        for (List<String[]> group : groups) {
+            boolean ignoreGroup = false;
+            for (String[] line : group) {
+                if (line[5].equals("incoming")) {
+                    ignoreGroup = true;
+                    break;
+                }
+            }
+            if (group.size() >= 2 && !ignoreGroup) {
+                for (String[] line : group) {
+                    writer.writeNext(line);
+                }
+                // Add a blank line to separate groups
+                writer.writeNext(new String[]{});
+            }
+        }
+        
+        // Close the reader and writer objects
+        reader.close();
+        writer.close();
+    }
+}
+```
+    This code adds an additional check to each group of lines to ensure that the "direction" field is not set to "incoming". If it is, the group is ignored and not written to the output file. Otherwise, the group is processed as before.
+
+
+
